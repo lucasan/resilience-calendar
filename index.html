@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resilience Text Comparison</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .step-container {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .navigation {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        input {
+            padding: 10px;
+            width: 60px;
+            text-align: center;
+            font-size: 16px;
+        }
+        h1 { color: #2c3e50; }
+        h2 { color: #34495e; }
+        .quote {
+            font-style: italic;
+            color: #7f8c8d;
+            border-left: 4px solid #95a5a6;
+            padding-left: 15px;
+            margin: 15px 0;
+        }
+        .action-step, .journal-entry {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .action-step::before {
+            content: "Action Step:";
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .journal-entry::before {
+            content: "Journal Entry:";
+            font-weight: bold;
+            display: block;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="navigation">
+        <button id="prevStep">Previous</button>
+        <input type="number" id="stepInput" min="1" value="1">
+        <button id="goToStep">Go to Step</button>
+        <button id="nextStep">Next</button>
+    </div>
+    
+    <div class="container">
+        <div class="step-container" id="original">
+            <h3>Original Text</h3>
+            <div id="originalContent"></div>
+        </div>
+        <div class="step-container" id="rewritten">
+            <h3>Rewritten Text</h3>
+            <div id="rewrittenContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let originalSteps = [];
+        let rewrittenSteps = [];
+        let currentStep = 1;
+
+        async function loadData() {
+            try {
+                const [originalResponse, rewrittenResponse] = await Promise.all([
+                    fetch('output/steps_extracted.json'),
+                    fetch('output/rewritten_steps.json')
+                ]);
+                
+                originalSteps = await originalResponse.json();
+                rewrittenSteps = await rewrittenResponse.json();
+                
+                displayStep(currentStep);
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
+        }
+
+        function displayStep(stepNumber) {
+            const originalStep = originalSteps.find(s => s.step_number === stepNumber.toString());
+            const rewrittenStep = rewrittenSteps.find(s => s.step_number === stepNumber.toString());
+            
+            document.getElementById('originalContent').innerHTML = formatStep(originalStep);
+            document.getElementById('rewrittenContent').innerHTML = formatStep(rewrittenStep);
+            document.getElementById('stepInput').value = stepNumber;
+        }
+
+        function formatStep(step) {
+            if (!step) return '<p>Step not found</p>';
+            
+            return `
+                <h1>Step ${step.step_number}</h1>
+                ${step.review_and_appreciate ? `<div class="review">${step.review_and_appreciate}</div>` : ''}
+                ${formatStepOfDay(step.step_of_the_day)}
+                ${step.action_step ? `<div class="action-step">${step.action_step}</div>` : ''}
+                ${step.journal_entry ? `<div class="journal-entry">${step.journal_entry}</div>` : ''}
+            `;
+        }
+
+        function formatStepOfDay(stepOfDay) {
+            if (!stepOfDay) return '';
+            
+            return `
+                <h2>${stepOfDay.title}</h2>
+                ${stepOfDay.quote ? `<div class="quote">${stepOfDay.quote}</div>` : ''}
+                ${stepOfDay.content ? `<div>${stepOfDay.content}</div>` : ''}
+            `;
+        }
+
+        document.getElementById('prevStep').addEventListener('click', () => {
+            if (currentStep > 1) {
+                currentStep--;
+                displayStep(currentStep);
+            }
+        });
+
+        document.getElementById('nextStep').addEventListener('click', () => {
+            currentStep++;
+            displayStep(currentStep);
+        });
+
+        document.getElementById('goToStep').addEventListener('click', () => {
+            const stepNum = parseInt(document.getElementById('stepInput').value);
+            if (stepNum > 0) {
+                currentStep = stepNum;
+                displayStep(currentStep);
+            }
+        });
+
+        // Load data when page loads
+        loadData();
+    </script>
+</body>
+</html> 
