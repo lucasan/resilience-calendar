@@ -100,8 +100,8 @@
         async function loadData() {
             try {
                 const [originalResponse, rewrittenResponse] = await Promise.all([
-                    fetch('output/steps_extracted.json'),
-                    fetch('output/rewritten_steps.json')
+                    fetch('./steps_extracted.json'),
+                    fetch('./rewritten_steps.json')
                 ]);
                 
                 originalSteps = await originalResponse.json();
